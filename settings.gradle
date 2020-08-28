@@ -1,0 +1,3 @@
+rootProject.name = "android_sample_common"
+include ':sample_common'
+include ':lib_common'
