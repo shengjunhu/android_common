@@ -10,7 +10,7 @@ android sample of common utils
 | Scan QR code or [Download][2]   |
 
 ### Function
--[x] AppConstants
+[-x] AppConstants
 -[x] AppException    
 -[x] AppManager
 
