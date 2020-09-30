@@ -10,24 +10,24 @@ android sample of common utils
 | Scan QR code or [Download][2]   |
 
 ### Function
--[ x] AppConstants
--[ x] AppException    
--[x] AppManager
+- [x] AppConstants
+- [x] AppException    
+- [x] AppManager
 
--[x] BusTag
--[x] LiveBus
+- [x] BusTag
+- [x] LiveBus
 
--[x] CommonActivity
--[x] CommonFragment
+- [x] CommonActivity
+- [x] CommonFragment
 
--[x] CommonUtils
--[x] DateUtils
--[x] FileUtils
--[x] ImageUtils
--[x] Logger
--[x] ScreenUtils
--[x] SharedPrefer
--[x] ThreadManager
+- [x] CommonUtils
+- [x] DateUtils
+- [x] FileUtils
+- [x] ImageUtils
+- [x] Logger
+- [x] ScreenUtils
+- [x] SharedPrefer
+- [x] ThreadManager
 
 
 ### About Author:
