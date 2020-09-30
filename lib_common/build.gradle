@@ -1,9 +1,5 @@
 apply plugin: rootProject.ext.plugins.library
 
-static def buildTime() {
-    return new Date().format("yyMMddHH", TimeZone.getTimeZone("GMT+08:00"))
-}
-
 android {
     compileSdkVersion rootProject.ext.android.compileSdkVersion
     buildToolsVersion rootProject.ext.android.buildToolsVersion
@@ -26,7 +22,7 @@ android {
 
     android.libraryVariants.all { variant ->
         variant.outputs.all {
-            outputFileName = "lib_common_v${buildTime()}_${variant.buildType.name}.aar"
+            outputFileName = "lib_common_v${defaultConfig.versionCode}_${variant.buildType.name}.aar"
         }
     }
 
