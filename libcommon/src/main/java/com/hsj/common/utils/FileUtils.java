@@ -12,9 +12,12 @@ import java.io.ByteArrayOutputStream;
 import java.io.Closeable;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.RandomAccessFile;
+import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
 
 /**
  * @Author:hsj
@@ -68,29 +71,15 @@ public final class FileUtils {
     }
 
     /**
-     * 关闭IO流
-     *
-     * @param closeable 流
-     */
-    public static void ioClose(Closeable closeable) {
-        if (closeable == null) return;
-        try {
-            closeable.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
-    /**
      * 删除目录
      *
-     * @param desFile 删除目标文件目录
+     * @param dstFile 删除目标文件目录
      * @return 结果
      */
-    public static boolean delete(File desFile) {
-        if (desFile == null || !desFile.exists()) return true;
-        if (desFile.isFile()) return desFile.delete();
-        File[] files = desFile.listFiles();
+    public static boolean delete(File dstFile) {
+        if (dstFile == null || !dstFile.exists()) return true;
+        if (dstFile.isFile()) return dstFile.delete();
+        File[] files = dstFile.listFiles();
         if (files == null || files.length == 0) return true;
         for (File file : files) {
             if (file.isDirectory()) {
@@ -107,15 +96,15 @@ public final class FileUtils {
     /**
      * 读取文件(比FileInputStream快)
      *
-     * @param desFile 目标文件
+     * @param dstFile 目标文件
      * @return 内容
      */
-    public static byte[] readFile(File desFile) {
-        if (desFile == null || desFile.isDirectory()) return null;
+    public static byte[] readFile(File dstFile) {
+        if (dstFile == null || dstFile.isDirectory()) return null;
         byte[] data = null;
         RandomAccessFile raf = null;
         try {
-            raf = new RandomAccessFile(desFile, "r");
+            raf = new RandomAccessFile(dstFile, "r");
             data = new byte[(int) raf.length()];
             raf.readFully(data);
         } catch (IOException e) {
@@ -129,16 +118,16 @@ public final class FileUtils {
     /**
      * 保存byte[]到文件
      *
+     * @param dstFile 存在文件
      * @param data    数据内容
-     * @param desFile 存在文件
      * @return 结果
      */
-    public static boolean saveFile(byte[] data, File desFile) {
-        if (desFile == null || desFile.isDirectory()) return false;
+    public static boolean saveFile(File dstFile, byte[] data) {
+        if (dstFile == null || dstFile.isDirectory()) return false;
         boolean result = true;
         RandomAccessFile raf = null;
         try {
-            raf = new RandomAccessFile(desFile, "rw");
+            raf = new RandomAccessFile(dstFile, "rw");
             raf.write(data);
         } catch (IOException e) {
             e.printStackTrace();
@@ -149,4 +138,41 @@ public final class FileUtils {
         return result;
     }
 
+    /**
+     * 保存ByteBuffer到文件
+     *
+     * @param dstFile 存在文件
+     * @param data    数据内容
+     * @return 结果
+     */
+    public static boolean saveFile(File dstFile, ByteBuffer data) {
+        if (dstFile == null || dstFile.isDirectory()) return false;
+        boolean result = true;
+        FileChannel fc = null;
+        try {
+            fc = new FileOutputStream(dstFile).getChannel();
+            fc.write(data);
+        } catch (IOException e) {
+            e.printStackTrace();
+            result = false;
+        } finally {
+            ioClose(fc);
+        }
+        return result;
+    }
+
+    /**
+     * 关闭IO流
+     *
+     * @param closeable 流
+     */
+    private static void ioClose(Closeable closeable) {
+        if (closeable != null) {
+            try {
+                closeable.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+    }
 }

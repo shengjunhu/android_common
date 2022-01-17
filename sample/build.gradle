@@ -75,7 +75,6 @@ dependencies {
     //LeakCanary
     debugImplementation rootProject.ext.dependencies.leak_canary
 
-    //lib_common
-    implementation project(path: ':lib_common')
-    //implementation(name: 'lib_common_v20093010_release', ext: 'aar')
+    //lib common
+    implementation project(path: ':libcommon')
 }
