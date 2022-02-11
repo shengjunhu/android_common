@@ -3,9 +3,7 @@ package com.hsj.common.utils;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.Looper;
-
-import androidx.annotation.NonNull;
-
+import androidx.annotation.Nullable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -24,14 +22,17 @@ public final class ThreadManager {
         throw new IllegalAccessError("ThreadManager can't be instance");
     }
 
-    /**
-     * 主线程Handler
-     */
-    private static Handler mainHandler;
+//======================================Main Handler================================================
+
     /**
      * 主线程Handler锁
      */
     private static final Object MAIN_HANDLER_LOCK = new Object();
+
+    /**
+     * 主线程Handler
+     */
+    private static Handler mainHandler;
 
     /**
      * 取得UI线程Handler
@@ -49,36 +50,42 @@ public final class ThreadManager {
         return mainHandler;
     }
 
-//=====================================Executor=====================================================
+//========================================Executor==================================================
 
     /**
      * 指定线程池队列长度
      */
-    private static final int QUEUE_SIZE = 1000;
-    private static final int CORE_POOL_SIZE = 1;
-    private static final int MAX_POOL_SIZE = 3;
-    private static final int KEEP_ALIVE_TIME = 3;
+    private static final int QUEUE_SIZE      = 100;
+
+    /**
+     * 指定线程池核心线程数量
+     */
+    private static final int CORE_POOL_SIZE  = 1;
+
+    /**
+     * 指定线程池最大线程数量
+     */
+    private static final int MAX_POOL_SIZE   = 3;
+
+    /**
+     * 指定空闲线程存活时间/秒
+     */
+    private static final int KEEP_ALIVE_TIME = 1;
+
     /**
      * 线程池
      */
-    private static ExecutorService mExecutor;
+    private static final ExecutorService EXECUTOR;
+
     /**
      * 队列限制长度，防止队列任务过多发生OOM
      */
-    private static LinkedBlockingQueue<Runnable> mQueue;
+    private static final LinkedBlockingQueue<Runnable> QUEUE;
 
-    /**
-     * 初始化线程池
-     */
-    private static void createPool() {
-        if (mQueue == null) {
-            mQueue = new LinkedBlockingQueue<>(QUEUE_SIZE);
-        }
-        if (mExecutor == null) {
-            //Android端通常可直接设置int corePoolSize = 3,int maximumPoolSize = 5
-            mExecutor = new ThreadPoolExecutor(CORE_POOL_SIZE, MAX_POOL_SIZE,
-                    KEEP_ALIVE_TIME, TimeUnit.SECONDS, mQueue);
-        }
+    static {
+        QUEUE = new LinkedBlockingQueue<>(QUEUE_SIZE);
+        EXECUTOR = new ThreadPoolExecutor(CORE_POOL_SIZE, MAX_POOL_SIZE,
+                KEEP_ALIVE_TIME, TimeUnit.SECONDS, QUEUE);
     }
 
     /**
@@ -86,11 +93,8 @@ public final class ThreadManager {
      *
      * @param run Runnable
      */
-    public static boolean executeOnPool(Runnable run) {
-        if (run == null) return false;
-        if (mExecutor == null) createPool();
-        mExecutor.execute(run);
-        return true;
+    public static void executeOnPool(Runnable run) {
+        if (run != null) EXECUTOR.execute(run);
     }
 
     /**
@@ -99,10 +103,9 @@ public final class ThreadManager {
      * @param run Runnable
      * @return submit result
      */
+    @Nullable
     public static Future<?> submitOnPool(Runnable run) {
-        if (run == null) return null;
-        if (mExecutor == null) createPool();
-        return mExecutor.submit(run);
+        return run != null ? EXECUTOR.submit(run) : null;
     }
 
     /**
@@ -112,50 +115,27 @@ public final class ThreadManager {
      * @return result
      */
     public static boolean removePoolTask(Runnable run) {
-        if (run == null || mQueue == null) return true;
-        return mQueue.remove(run);
+        return run == null || QUEUE.remove(run);
     }
 
     /**
      * 清空线程池中所有任务
      */
     public static void clearPoolTask() {
-        if (mQueue != null) {
-            mQueue.clear();
-        }
-    }
-
-    /**
-     * 关闭线程池
-     */
-    public static void shutdownPool() {
-        if (mQueue != null) {
-            mQueue.clear();
-            mQueue = null;
-        }
-        if (mExecutor != null) {
-            mExecutor.shutdown();
-            mExecutor = null;
-        }
+        QUEUE.clear();
     }
 
 //=====================================SUB Thread===================================================
 
     /**
-     * 副线程执行比较块的任务:
+     * 副线程Handler
      */
-    private static Handler SUB_THREAD_HANDLER;
     private static HandlerThread SUB_THREAD;
 
     /**
-     * 副线程：线程优先级高、执行速度快、
-     *
-     * @param run Runnable
-     * @return execute result
+     * 副线程执行比较块的任务
      */
-    public static boolean executeOnSubThread(Runnable run) {
-        return run != null && getSubThreadHandler().post(run);
-    }
+    private static Handler SUB_THREAD_HANDLER;
 
     /**
      * 获取副线程
@@ -177,7 +157,7 @@ public final class ThreadManager {
     public static Handler getSubThreadHandler() {
         if (SUB_THREAD_HANDLER == null) {
             synchronized (ThreadManager.class) {
-                SUB_THREAD = new HandlerThread("sub_thread");
+                SUB_THREAD = new HandlerThread("thread_sub");
                 SUB_THREAD.start();
                 SUB_THREAD_HANDLER = new Handler(SUB_THREAD.getLooper());
             }
@@ -186,7 +166,7 @@ public final class ThreadManager {
     }
 
     /**
-     * 获取副线程Handler
+     * 获取副线程Looper
      *
      * @return SubThread Looper
      */
@@ -195,25 +175,22 @@ public final class ThreadManager {
     }
 
     /**
-     * 清空副线程任务
+     * 副线程:线程优先级高、执行速度快、
+     *
+     * @param run Runnable
+     * @return execute result
      */
-    public static void clearSubTask(Runnable run) {
-        if (run == null || SUB_THREAD_HANDLER == null) return;
-        SUB_THREAD_HANDLER.removeCallbacks(run);
+    public static boolean executeOnSubThread(Runnable run) {
+        return run != null && getSubThreadHandler().post(run);
     }
 
     /**
-     * shutdown副线程[非必要情况不建议关闭]
+     * 清空副线程任务
      */
-    public static void shutdownSubThread() {
-        if (SUB_THREAD_HANDLER != null) {
-            SUB_THREAD_HANDLER.getLooper().quitSafely();
+    public static void clearSubTask(Runnable run) {
+        if (run != null && SUB_THREAD_HANDLER != null) {
+            SUB_THREAD_HANDLER.removeCallbacks(run);
         }
-        if (SUB_THREAD != null) {
-            SUB_THREAD.quitSafely();
-        }
-        SUB_THREAD_HANDLER = null;
-        SUB_THREAD = null;
     }
 
 }
